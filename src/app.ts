@@ -1,26 +1,60 @@
-import express from "express";
+import express, {
+  Express,
+  json,
+  urlencoded,
+  Request,
+  Response,
+  NextFunction,
+} from "express";
 import cors from "cors";
-import type { NextFunction, Request, Response } from "express";
-import { budgetRouter } from "./modules/budget/budget.routes";
-import { expensesRouter } from "./modules/expenses/expenses.routes";
-import { summaryRouter } from "./modules/summary/summary.routes";
+import { AuthRouter } from "./modules/auth/auth.routes";
+import { AppError } from "./utils/app.error";
+import { ENV } from "./config/env";
 
-export const app = express();
+export default class App {
+  PORT = ENV.PORT;
+  private app: Express;
 
-app.use(cors());
-app.use(express.json());
+  constructor() {
+    this.app = express();
+    this.configure();
+    this.routes();
+    this.errorHandler();
+  }
 
-// health check
-app.get("/", (_req: Request, res: Response) => {
-  res.json({ message: "Budget Tracker API is running" });
-});
+  private configure() {
+    this.app.use(cors());
+    this.app.use(json());
+    this.app.use(urlencoded({ extended: true }));
+    this.app.set("trust proxy", 1);
+  }
 
-// pakai router
-app.use("/api", budgetRouter);
-app.use("/api", expensesRouter);
-app.use("/api", summaryRouter);
+  private routes(): void {
+    const authRouter = new AuthRouter();
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
-  res.status(500).json({ error: "Internal Server Error" });
-});
+    this.app.use("/api/user", authRouter.getRouter());
+  }
+
+  private errorHandler() {
+    this.app.use(
+      (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+        if (err instanceof AppError) {
+          return res.status(err.statusCode).json({
+            error: err.message,
+          });
+        }
+
+        console.error(err);
+        res.status(500).json({
+          error: "Internal Server Error",
+        });
+      }
+    );
+  }
+
+  public start(): void {
+    this.app.listen(this.PORT, () => {
+      console.log(`➜ [API] Local: http://localhost:${this.PORT}/`);
+    });
+  }
+}
