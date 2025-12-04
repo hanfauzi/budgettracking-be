@@ -1,15 +1,16 @@
+import cors from "cors";
 import express, {
   Express,
   json,
-  urlencoded,
+  NextFunction,
   Request,
   Response,
-  NextFunction,
+  urlencoded,
 } from "express";
-import cors from "cors";
+import { ENV } from "./config/env";
+import { authLimiter } from "./middleware/limitter.middleware";
 import { AuthRouter } from "./modules/auth/auth.routes";
 import { AppError } from "./utils/app.error";
-import { ENV } from "./config/env";
 
 export default class App {
   PORT = ENV.PORT;
@@ -32,7 +33,7 @@ export default class App {
   private routes(): void {
     const authRouter = new AuthRouter();
 
-    this.app.use("/api/user", authRouter.getRouter());
+    this.app.use("/api/user", authLimiter, authRouter.getRouter());
   }
 
   private errorHandler() {
