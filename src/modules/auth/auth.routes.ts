@@ -24,6 +24,8 @@ export class AuthRouter {
       validateBody(LoginDTO),
       this.authController.loginUser
     );
+
+    
   }
   getRouter = () => {
     return this.router;

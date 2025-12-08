@@ -3,17 +3,36 @@ import jwt from "jsonwebtoken";
 import { AppError } from "../utils/app.error";
 
 export class JwtVerify {
-  static async verifyToken(req: Request, res: Response, next: NextFunction) {
+  static verifyToken(req: Request, res: Response, next: NextFunction) {
     try {
-      const token = req.headers.authorization?.split(" ")[1];
-      if (!token) throw new AppError("token must be provided");
-      const payload = await jwt.verify(token, process.env.JWT_SECRET_KEY!);
+      // 1️⃣ Ambil token dari httpOnly cookie dulu
+      const cookieToken = req.cookies?.accessToken;
+
+      // 2️⃣ Fallback ke Authorization header
+      const headerToken = req.headers.authorization?.startsWith("Bearer ")
+        ? req.headers.authorization.split(" ")[1]
+        : null;
+
+      // 3️⃣ Final token (pilih cookie kalau ada)
+      const token = cookieToken || headerToken;
+
+      if (!token) {
+        throw new AppError("Access token must be provided", 401);
+      }
+
+      // 4️⃣ Verify token
+      const payload = jwt.verify(token, process.env.JWT_SECRET!);
+
+      // 5️⃣ Simpan payload ke res.locals (sesuai style kamu)
       res.locals.payload = payload;
+
       next();
     } catch (error) {
       next(error);
     }
   }
+}
+
 
   //   static verifyRole(authorizeRole: Role[]) {
   //     return async (req: Request, res: Response, next: NextFunction) => {
@@ -30,4 +49,4 @@ export class JwtVerify {
   //       }
   //     };
   //   }
-}
+
