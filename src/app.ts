@@ -11,6 +11,8 @@ import { ENV } from "./config/env";
 import { authLimiter } from "./middleware/limitter.middleware";
 import { AuthRouter } from "./modules/auth/auth.routes";
 import { AppError } from "./utils/app.error";
+import cookieParser from "cookie-parser";
+import { BudgetRouter } from "./modules/budget/budget.routes";
 
 export default class App {
   PORT = ENV.PORT;
@@ -24,16 +26,24 @@ export default class App {
   }
 
   private configure() {
-    this.app.use(cors());
+    this.app.use(
+      cors({
+        origin: "http://localhost:3000",
+        credentials: true,
+      })
+    );
     this.app.use(json());
+    this.app.use(cookieParser());
     this.app.use(urlencoded({ extended: true }));
     this.app.set("trust proxy", 1);
   }
 
   private routes(): void {
     const authRouter = new AuthRouter();
+    const budgetRouter = new BudgetRouter();
 
     this.app.use("/api/user", authLimiter, authRouter.getRouter());
+    this.app.use("/api/budget", budgetRouter.getRouter());
   }
 
   private errorHandler() {

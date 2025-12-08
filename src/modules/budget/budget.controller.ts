@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { BudgetService } from "./budget.service";
 
 export class BudgetController {
@@ -7,18 +7,26 @@ export class BudgetController {
     this.budgetService = new BudgetService();
   }
 
-  getBudget = (_req: Request, res: Response) => {
-    const result = this.budgetService.getBudget();
-    res.json(result);
+  getBudget = (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = res.locals.payload.id;
+      const result = this.budgetService.getBudget(userId);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
   };
 
-  updateBudget = (req: Request, res: Response) => {
+  setUpdateBudget = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { budget } = req.body;
-      const result = this.budgetService.updateBudget(budget);
-      res.json(result);
-    } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      const userId = res.locals.payload.id;
+      const result = await this.budgetService.setUpdateBudget({
+        userId,
+        ...req.body,
+      });
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
     }
   };
 }

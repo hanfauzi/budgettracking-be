@@ -70,7 +70,7 @@ export class AuthService {
     const accessToken = createToken({
       payload,
       secretKey: process.env.JWT_SECRET!,
-      options: { expiresIn: "15m" },
+      options: { expiresIn: "1hr" },
     });
 
     return { accessToken };
